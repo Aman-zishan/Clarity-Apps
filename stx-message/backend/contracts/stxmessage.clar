@@ -11,6 +11,7 @@
 (define-map messages principal (string-utf8 500))
 
 ;; public functions
+
 ;; #[allow(unchecked_data)]
 (define-public (write-stxmessage (message (string-utf8 500)) (price uint)) 
     (begin 
