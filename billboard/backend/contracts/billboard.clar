@@ -52,7 +52,7 @@
 
 ;; read only functions
 (define-read-only (get-billboard-owner) 
-    (ok (get owner (var-get billboard)))
+    (unwrap-panic (get owner (var-get billboard)))
 )
 
 ;; private functions
