@@ -47,7 +47,6 @@
 ;; Function to rent billboard
 (define-public (rent-billboard (billboard_message (string-utf8 500)) (billboard_duration uint))
     (begin
-
         (asserts! (is-none (get-billboard-owner)) err-billboard-locked)
             (if (>= block-height (get end-time (var-get billboard))) 
                 (begin 
@@ -80,7 +79,7 @@
 
 ;; read only functions
 (define-read-only (get-billboard-owner) 
-     (get owner (var-get billboard))
+    (get owner (var-get billboard))
 )
 
 (define-read-only (get-block-height) 
