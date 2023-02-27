@@ -17,6 +17,7 @@
     {
         owner: (optional principal),
         start-time: uint,
+        end-time: uint,
         duration: uint,
         message: (string-utf8 500)
     }
@@ -24,6 +25,7 @@
     {
         owner: none,
         start-time: u0,
+        end-time: u0,
         duration: u0,
         message: u"Your BillBoard Message Here!"
     }
@@ -43,18 +45,47 @@
 )
 
 ;; Function to rent billboard
-(define-public (rent-billboard (message (string-utf8 500)) (duration uint))
+(define-public (rent-billboard (billboard_message (string-utf8 500)) (billboard_duration uint))
     (begin
+
         (asserts! (is-none (get-billboard-owner)) err-billboard-locked)
-        ;;TODO: Implement the remaining logic
+            (if (>= block-height (get end-time (var-get billboard))) 
+                (begin 
+                    (merge (var-get billboard) {  
+                        owner: none,
+                        start-time: u0,
+                        end-time: u0,
+                        duration: u0,
+                        message: u"Your BillBoard Message Here!"})    
+                        (ok "expired billboard cleared")
+                ) 
+    
+            (let ((start-timestamp block-height))
+                ;; block time considered as 1 block mined per sec
+                (let ((end-timestamp (+ start-timestamp (* billboard_duration u1440))))
+                    (asserts! (>= block-height end-timestamp) err-billboard-locked)
+                    (try! (stx-transfer? (* ( var-get rent) billboard_duration) tx-sender admin))
+                    (merge (var-get billboard) {  
+                        owner: tx-sender,
+                        start-time: start-timestamp,
+                        end-time: end-timestamp,
+                        duration: billboard_duration,
+                        message: billboard_message})   
+                    (ok "New billboard rented!")
+                )
+            )
+        ) 
     )
 )
 
 ;; read only functions
 (define-read-only (get-billboard-owner) 
-    (unwrap-panic (get owner (var-get billboard)))
+     (get owner (var-get billboard))
 )
 
+(define-read-only (get-block-height) 
+    block-height    
+)
 ;; private functions
 ;;
 
