@@ -8,26 +8,27 @@
 (define-constant admin 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM)
 (define-constant err-admin-only (err u100))
 (define-constant err-billboard-locked (err u101))
+(define-constant err-transfer (err u102))
 
 ;; data vars & maps
 (define-map messages principal (string-utf8 500))
 (define-data-var message-index uint u0)
+(define-data-var billboard-locked bool false)
+(define-data-var billboard-expiry uint u0)
 (define-data-var billboard
     ;; Tuple type definition:
     {
-        owner: (optional principal),
+        owner: principal,
         start-time: uint,
-        end-time: uint,
         duration: uint,
-        message: (string-utf8 500)
+        message: (string-utf8 500),
     }
     ;; Tuple value:
     {
-        owner: none,
+        owner: admin,
         start-time: u0,
-        end-time: u0,
         duration: u0,
-        message: u"Your BillBoard Message Here!"
+        message: u"Your BillBoard Message Here!",
     }
 )
 (define-data-var rent uint u100)
@@ -45,35 +46,33 @@
 )
 
 ;; Function to rent billboard
+;; #[allow(unchecked_data)]
 (define-public (rent-billboard (billboard_message (string-utf8 500)) (billboard_duration uint))
     (begin
-        (asserts! (is-none (get-billboard-owner)) err-billboard-locked)
-            (if (>= block-height (get end-time (var-get billboard))) 
-                (begin 
-                    (merge (var-get billboard) {  
-                        owner: none,
-                        start-time: u0,
-                        end-time: u0,
-                        duration: u0,
-                        message: u"Your BillBoard Message Here!"})    
-                        (ok "expired billboard cleared")
-                ) 
-    
+        ;;(asserts! (is-none (get-billboard-owner)) err-billboard-locked)
             (let ((start-timestamp block-height))
                 ;; block time considered as 1 block mined per sec
                 (let ((end-timestamp (+ start-timestamp (* billboard_duration u1440))))
-                    (asserts! (>= block-height end-timestamp) err-billboard-locked)
-                    (try! (stx-transfer? (* ( var-get rent) billboard_duration) tx-sender admin))
+                    ;; if block height >= end-time of current billboard change lock status to false for new rental
+                    (if (>= block-height (var-get billboard-expiry))
+                    (var-set billboard-locked false)
+                    (var-set billboard-locked true)
+                    )
+                    (asserts! (is-eq (var-get billboard-locked) false) err-billboard-locked)
+                    (unwrap! (stx-transfer? (* ( var-get rent) billboard_duration) tx-sender admin) err-transfer)
+                    (var-set billboard 
                     (merge (var-get billboard) {  
                         owner: tx-sender,
                         start-time: start-timestamp,
-                        end-time: end-timestamp,
                         duration: billboard_duration,
-                        message: billboard_message})   
+                        message: billboard_message,
+                        })  )
+                        (var-set billboard-expiry end-timestamp)
+                        ;;(var-set billboard-locked true)
+                     
                     (ok "New billboard rented!")
                 )
-            )
-        ) 
+            ) 
     )
 )
 
@@ -85,6 +84,17 @@
 (define-read-only (get-block-height) 
     block-height    
 )
+
+(define-read-only (get-rent) 
+    (var-get rent)
+)
+
+(define-read-only (get-billboard) 
+(begin 
+    (var-get billboard)   
+    (var-get billboard-locked)
+    (var-get billboard-expiry)
+)
+)
 ;; private functions
-;;
 
