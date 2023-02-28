@@ -67,7 +67,7 @@
                         message: billboard_message,
                         })  )
                         (var-set billboard-expiry end-timestamp)
-                        ;;(var-set billboard-locked true)
+                        (var-set billboard-locked true)
                      
                     (ok "New billboard rented!")
                 )

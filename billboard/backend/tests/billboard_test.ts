@@ -96,7 +96,7 @@ Clarinet.test({
         let wallet_1 = accounts.get('wallet_1')!
         const msg = types.utf8('lorem ipsum')
         const duration = types.uint(1)
-        let block = chain.mineBlock([
+        let rent_wallet_1 = chain.mineBlock([
             Tx.contractCall(
                 'billboard',
                 'rent-billboard',
@@ -104,13 +104,49 @@ Clarinet.test({
                 wallet_1.address
             ),
         ])
-        const msgq = chain.callReadOnlyFn(
-            'billboard',
-            'get-billboard',
-            [],
-            wallet_1.address
-        )
 
-        console.log(block.receipts[0].result)
+        rent_wallet_1.receipts[0].result.expectOk()
+    },
+})
+
+Clarinet.test({
+    name: 'rent-billboard should prevent rental if billboard is already occupied',
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        let wallet_1 = accounts.get('wallet_1')!
+        let wallet_2 = accounts.get('wallet_2')!
+        const wallet_3 = accounts.get('wallet_3')!
+        const msg_wallet_1 = types.utf8('lorem ipsum of wallet_1')
+        const msg_wallet_2 = types.utf8('lorem ipsum of wallet_2')
+        const duration_wallet_1 = types.uint(1)
+        const duration_wallet_2 = types.uint(2)
+
+        let rental_by_wallet_1 = chain.mineBlock([
+            Tx.contractCall(
+                'billboard',
+                'rent-billboard',
+                [msg_wallet_1, duration_wallet_1],
+                wallet_1.address
+            ),
+        ])
+
+        let rental_by_wallet_2 = chain.mineBlock([
+            Tx.contractCall(
+                'billboard',
+                'rent-billboard',
+                [msg_wallet_2, duration_wallet_2],
+                wallet_2.address
+            ),
+        ])
+
+        rental_by_wallet_1.receipts[0].result.expectOk()
+        rental_by_wallet_2.receipts[0].result.expectErr(types.uint(101))
+
+        const billboard_owner = chain.callReadOnlyFn(
+            'billboard',
+            'get-billboard-owner',
+            [],
+            wallet_3.address
+        )
+        assertEquals(billboard_owner.result, wallet_1.address)
     },
 })
