@@ -92,8 +92,6 @@
 (define-read-only (get-billboard) 
 (begin 
     (var-get billboard)   
-    (var-get billboard-locked)
-    (var-get billboard-expiry)
 )
 )
 ;; private functions
