@@ -8,7 +8,6 @@
 (define-constant admin 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM)
 (define-constant err-admin-only (err u100))
 (define-constant err-billboard-locked (err u101))
-(define-constant err-transfer (err u102))
 
 ;; data vars & maps
 (define-map messages principal (string-utf8 500))
@@ -59,7 +58,7 @@
                     (var-set billboard-locked true)
                     )
                     (asserts! (is-eq (var-get billboard-locked) false) err-billboard-locked)
-                    (unwrap! (stx-transfer? (* ( var-get rent) billboard_duration) tx-sender admin) err-transfer)
+                    (try! (stx-transfer? (* ( var-get rent) billboard_duration) tx-sender admin))
                     (var-set billboard 
                     (merge (var-get billboard) {  
                         owner: tx-sender,
