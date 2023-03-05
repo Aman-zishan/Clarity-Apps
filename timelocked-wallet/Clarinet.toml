@@ -1,13 +1,13 @@
 [project]
-name = 'backend'
+name = 'timelocked-wallet'
 description = ''
 authors = []
-telemetry = true
+telemetry = false
 cache_dir = './.cache'
 requirements = []
-[contracts.billboard]
-path = 'contracts/billboard.clar'
-clarity_version = 2
+[contracts.timelocked-wallet]
+path = 'contracts/timelocked-wallet.clar'
+clarity_version = 1
 epoch = 2.0
 [repl.analysis]
 passes = ['check_checker']

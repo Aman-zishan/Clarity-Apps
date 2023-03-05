@@ -11,8 +11,8 @@
 (define-constant err-insufficient-balance (err u102))
 
 ;; data vars & maps
-(define-map messages principal (string-utf8 500))
-(define-data-var message-index uint u0)
+(define-data-var message-history (list 10 {renter: principal, message: (string-utf8 500)}) (list))
+
 (define-data-var billboard-locked bool false)
 (define-data-var billboard-expiry uint u0)
 (define-data-var billboard
@@ -26,7 +26,7 @@
     ;; Tuple value:
     {
         owner: admin,
-        start-time: u0,
+        start-time: block-height,
         duration: u0,
         message: u"Your BillBoard Message Here!",
     }
@@ -48,7 +48,6 @@
 ;; Function to rent billboard
 ;; #[allow(unchecked_data)]
 (define-public (rent-billboard (billboard_message (string-utf8 500)) (billboard_duration uint))
-    ;;(asserts! (is-none (get-billboard-owner)) err-billboard-locked)
     (let 
         (
         (start-timestamp block-height)
@@ -62,7 +61,7 @@
         )
         (asserts! (is-eq (var-get billboard-locked) false) err-billboard-locked)
         (asserts! (>= (stx-get-balance tx-sender) (* ( var-get rent) billboard_duration) ) err-insufficient-balance)
-        (try! (stx-transfer? (* ( var-get rent) billboard_duration) tx-sender admin))
+        (try! (stx-transfer? (* ( var-get rent) billboard_duration) tx-sender (as-contract tx-sender)))
         (var-set billboard 
             (merge (var-get billboard) {  
                 owner: tx-sender,
@@ -73,20 +72,26 @@
             )
         )
         (var-set billboard-expiry end-timestamp)
-        (var-set billboard-locked true)
-                     
-        (ok "New billboard rented!")
+        (var-set billboard-locked true)  
+        ;;implement message history
+        (append (var-get message-history) {renter: tx-sender, message: billboard_message})
+                
+        (ok "Billboard rented!")
         
     ) 
 )
 
 ;; read only functions
-(define-read-only (get-billboard-owner) 
-    (get owner (var-get billboard))
+(define-read-only (get-block-height) 
+    block-height
 )
 
-(define-read-only (get-block-height) 
-    block-height    
+(define-read-only (get-billboard-expiry) 
+    (var-get billboard-expiry)
+)
+
+(define-read-only (get-billboard-owner) 
+    (get owner (var-get billboard))
 )
 
 (define-read-only (get-rent) 
@@ -94,9 +99,19 @@
 )
 
 (define-read-only (get-billboard) 
-(begin 
     (var-get billboard)   
 )
+
+(define-read-only (get-contract-balance) 
+    (stx-get-balance (as-contract tx-sender))
 )
-;; private functions
+
+(define-read-only (get-billboard-history) 
+    (var-get message-history)
+)
+
+
+
+
+
 
