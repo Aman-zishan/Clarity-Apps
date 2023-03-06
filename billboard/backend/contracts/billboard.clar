@@ -81,15 +81,18 @@
         
         (if (> (var-get message-index) u10)
             (begin
-            (update-message-history {renter: tx-sender, message: billboard_message})
-            (var-set current-index (mod (var-get message-index) u10)) 
+                (update-message-history {renter: tx-sender, message: billboard_message})
+                (var-set current-index (mod (var-get message-index) u10)) 
             )
             
             (var-set message-history 
                 (unwrap! 
                     (as-max-len? 
                         (append (var-get message-history) 
-                        {renter: tx-sender, message: billboard_message}) u10) (err u99)
+                        {
+                            renter: tx-sender, 
+                            message: billboard_message
+                        }) u10) (err u99)
                 )
             )
         )
@@ -102,12 +105,10 @@
 
 ;; update message history
 (define-private (update-message-history (item {renter: principal, message: (string-utf8 500)})) 
-(begin
- 
-    (var-set message-history (unwrap! (replace-at? (var-get message-history) (var-get current-index) item) false))
- )
-    
+    (begin
+        (var-set message-history (unwrap! (replace-at? (var-get message-history) (var-get current-index) item) false))
     )
+)
 
 ;; read only functions and helper functions
 (define-read-only (get-block-height) 
@@ -137,12 +138,7 @@
 (define-read-only (get-billboard-history) 
     (var-get message-history)
 )
-(define-read-only (get-index) 
-    (var-get message-index)
-)
-(define-read-only (get-current-index) 
-    (var-get current-index)
-)
+
 
 
 
