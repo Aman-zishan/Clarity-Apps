@@ -11,8 +11,8 @@ plan:
         - contract-publish:
             contract-name: billboard
             expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 31000
+            cost: 39690
             path: contracts/billboard.clar
             anchor-block-only: true
-            clarity-version: 1
-      epoch: "2.0"
+            clarity-version: 2
+      epoch: "2.1"

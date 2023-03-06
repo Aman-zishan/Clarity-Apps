@@ -12,7 +12,8 @@
 
 ;; data vars & maps
 (define-data-var message-history (list 10 {renter: principal, message: (string-utf8 500)}) (list))
-
+(define-data-var message-index uint u0)
+(define-data-var current-index uint u0)
 (define-data-var billboard-locked bool false)
 (define-data-var billboard-expiry uint u0)
 (define-data-var billboard
@@ -73,15 +74,42 @@
         )
         (var-set billboard-expiry end-timestamp)
         (var-set billboard-locked true)  
+
         ;;implement message history
-        (append (var-get message-history) {renter: tx-sender, message: billboard_message})
+        (var-set message-index (+ (var-get message-index) u1))
+        
+        
+        (if (> (var-get message-index) u10)
+            (begin
+            (update-message-history {renter: tx-sender, message: billboard_message})
+            (var-set current-index (mod (var-get message-index) u10)) 
+            )
+            
+            (var-set message-history 
+                (unwrap! 
+                    (as-max-len? 
+                        (append (var-get message-history) 
+                        {renter: tx-sender, message: billboard_message}) u10) (err u99)
+                )
+            )
+        )
+        
                 
         (ok "Billboard rented!")
         
     ) 
 )
 
-;; read only functions
+;; update message history
+(define-private (update-message-history (item {renter: principal, message: (string-utf8 500)})) 
+(begin
+ 
+    (var-set message-history (unwrap! (replace-at? (var-get message-history) (var-get current-index) item) false))
+ )
+    
+    )
+
+;; read only functions and helper functions
 (define-read-only (get-block-height) 
     block-height
 )
@@ -109,6 +137,14 @@
 (define-read-only (get-billboard-history) 
     (var-get message-history)
 )
+(define-read-only (get-index) 
+    (var-get message-index)
+)
+(define-read-only (get-current-index) 
+    (var-get current-index)
+)
+
+
 
 
 
